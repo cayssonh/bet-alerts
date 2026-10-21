@@ -1,0 +1,34 @@
+name: Live bet alerts
+on:
+  schedule:
+    - cron: "0 15 * * *"
+    - cron: "0 21 * * *"
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+concurrency:
+  group: alerts
+  cancel-in-progress: false
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - uses: actions/cache/restore@v4
+        with:
+          path: state.json
+          key: state-${{ github.run_id }}
+          restore-keys: state-
+      - run: python live_alerts.py
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          MY_GAMES: ${{ secrets.MY_GAMES }}
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: state.json
+          key: state-${{ github.run_id }}
