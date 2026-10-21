@@ -56,7 +56,8 @@ def matches(event, watch):
         t = c["team"]
         names += [t.get("abbreviation", ""), t.get("displayName", ""), t.get("shortDisplayName", ""), t.get("location", "")]
     for key, note in watch.items():
-        if any(key.lower() == n.lower() or (len(key) > 3 and key.lower() in n.lower()) for n in names):
+        # exact match only, so "Tennessee" doesn't also catch Middle Tennessee, "Texas" doesn't catch Texas Tech
+        if any(key.lower() == n.lower() for n in names):
             return note or key
     return None
 
@@ -93,6 +94,8 @@ def check(league):
             start = dt.datetime.fromisoformat(ev["date"].replace("Z", "+00:00"))
             if start - dt.datetime.now(dt.timezone.utc) < dt.timedelta(hours=6):
                 upcoming_soon = True
+        if s["state"] is None and state == "post":
+            s["state"] = state          # already over when first seen, don't alert
         if state != s["state"]:
             if state == "in" and s["state"] is not None:
                 push("Kickoff", f"{ev['shortName']} is on. Your bet: {note}")
